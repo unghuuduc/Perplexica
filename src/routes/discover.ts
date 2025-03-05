@@ -96,90 +96,6 @@ async function performSearch(query: string, site: string) {
   }
 }
 
-async function performSearch(query: string, site: string) {
-  const searchEngine = getNewsSearchEngineBackend();
-  switch (searchEngine) {
-    case 'google': {
-      const googleResult = await searchGooglePSE(query);
-
-      return googleResult.originalres.map((item) => {
-        const imageSources = [
-          item.pagemap?.cse_image?.[0]?.src,
-          item.pagemap?.cse_thumbnail?.[0]?.src,
-          item.pagemap?.metatags?.[0]?.['og:image'],
-          item.pagemap?.metatags?.[0]?.['twitter:image'],
-          item.pagemap?.metatags?.[0]?.['image'],
-        ].filter(Boolean); // Remove undefined values
-
-        return {
-          title: item.title,
-          url: item.link,
-          content: item.snippet,
-          thumbnail: imageSources[0], // First available image
-          img_src: imageSources[0], // Same as thumbnail for consistency
-          iframe_src: null,
-          author: item.pagemap?.metatags?.[0]?.['og:site_name'] || site,
-          publishedDate:
-            item.pagemap?.metatags?.[0]?.['article:published_time'],
-        };
-      });
-    }
-
-    case 'searxng': {
-      const searxResult = await searchSearxng(query, {
-        engines: ['bing news'],
-        pageno: 1,
-      });
-      return searxResult.results;
-    }
-
-    case 'brave': {
-      const braveResult = await searchBraveAPI(query);
-      return braveResult.results.map((item) => ({
-        title: item.title,
-        url: item.url,
-        content: item.content,
-        thumbnail: item.img_src,
-        img_src: item.img_src,
-        iframe_src: null,
-        author: item.meta?.fetched || site,
-        publishedDate: item.meta?.lastCrawled,
-      }));
-    }
-
-    case 'yacy': {
-      const yacyResult = await searchYaCy(query);
-      return yacyResult.results.map((item) => ({
-        title: item.title,
-        url: item.url,
-        content: item.content,
-        thumbnail: item.img_src,
-        img_src: item.img_src,
-        iframe_src: null,
-        author: item?.host || site,
-        publishedDate: item?.pubDate,
-      }));
-    }
-
-    case 'bing': {
-      const bingResult = await searchBingAPI(query);
-      return bingResult.results.map((item) => ({
-        title: item.title,
-        url: item.url,
-        content: item.content,
-        thumbnail: item.img_src,
-        img_src: item.img_src,
-        iframe_src: null,
-        author: item?.publisher || site,
-        publishedDate: item?.datePublished,
-      }));
-    }
-
-    default:
-      throw new Error(`Unknown search engine ${searchEngine}`);
-  }
-}
-
 // Helper function to get search queries for a category
 const getSearchQueriesForCategory = (category: string): { site: string, keyword: string }[] => {
   const categories: Record<string, { site: string, keyword: string }[]> = {
@@ -308,73 +224,31 @@ const searchCategory = async (category: string, languages?: string[]) => {
 // Main discover route - supports category, preferences, and languages parameters
 router.get('/', async (req, res) => {
   try {
-    const category = req.query.category as string;
-    const preferencesParam = req.query.preferences as string;
-    const languagesParam = req.query.languages as string;
-    
-    let languages: string[] = [];
-    if (languagesParam) {
-      languages = JSON.parse(languagesParam);
-    }
-    
-    let data: any[] = [];
-    
-    if (category && category !== 'For You') {
-      // Get news for a specific category
-      data = await searchCategory(category, languages);
-    } else if (preferencesParam) {
-      // Get news based on user preferences
-      const preferences = JSON.parse(preferencesParam);
-      const categoryPromises = preferences.map((pref: string) => searchCategory(pref, languages));
-      const results = await Promise.all(categoryPromises);
-      data = results.flat();
-    } else {
-      // Default behavior with optional language filter
-      if (languages.length === 0) {
-        // No language filter
-        const searchOptions: SearxngSearchOptions = {
-          engines: ['bing news'],
-          pageno: 1,
-        };
-      
-      // Use improved sources for default searches
-      data = (
-        await Promise.all([
-          searchSearxng('site:techcrunch.com tech', searchOptions),
-          searchSearxng('site:wired.com technology', searchOptions),
-          searchSearxng('site:theverge.com tech', searchOptions),
-          searchSearxng('site:venturebeat.com artificial intelligence', searchOptions),
-          searchSearxng('site:technologyreview.mit.edu AI', searchOptions),
-          searchSearxng('site:ai.googleblog.com AI', searchOptions),
-        ])
+    const queries = [
+      { site: 'businessinsider.com', topic: 'AI' },
+      { site: 'www.exchangewire.com', topic: 'AI' },
+      { site: 'yahoo.com', topic: 'AI' },
+      { site: 'businessinsider.com', topic: 'tech' },
+      { site: 'www.exchangewire.com', topic: 'tech' },
+      { site: 'yahoo.com', topic: 'tech' },
+    ];
+
+    const data = (
+      await Promise.all(
+        queries.map(async ({ site, topic }) => {
+          try {
+            const query = `site:${site} ${topic}`;
+            return await performSearch(query, site);
+          } catch (error) {
+            logger.error(`Error searching ${site}: ${error.message}`);
+            return [];
+          }
+        }),
       )
-        .map((result) => result.results)
-        .flat();
-      } else {
-        // Search each language and combine results
-        for (const language of languages) {
-          const searchOptions: SearxngSearchOptions = {
-            engines: ['bing news'],
-            pageno: 1,
-            language,
-          };
-          
-          const results = await Promise.all([
-            searchSearxng('site:techcrunch.com tech', searchOptions),
-            searchSearxng('site:wired.com technology', searchOptions),
-            searchSearxng('site:theverge.com tech', searchOptions),
-            searchSearxng('site:venturebeat.com artificial intelligence', searchOptions),
-            searchSearxng('site:technologyreview.mit.edu AI', searchOptions),
-            searchSearxng('site:ai.googleblog.com AI', searchOptions),
-          ]);
-          
-          data.push(...results.map(result => result.results).flat());
-        }
-      }
-    }
-    
-    // Shuffle the results
-    data = data.sort(() => Math.random() - 0.5);
+    )
+      .flat()
+      .sort(() => Math.random() - 0.5)
+      .filter((item) => item.title && item.url && item.content);
 
     return res.json({ blogs: data });
   } catch (err: any) {
