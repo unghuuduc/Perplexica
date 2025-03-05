@@ -12,6 +12,7 @@ package-lock.json
 # IDE/Editor specific
 .vscode/
 .idea/
+.qodo/
 *.iml
 
 # Environment variables

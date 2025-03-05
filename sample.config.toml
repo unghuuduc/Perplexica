@@ -21,12 +21,20 @@ API_KEY = ""
 [MODELS.GEMINI]
 API_KEY = ""
 
-[MODELS.CUSTOM_OPENAI]
+[MODELS.DEEPSEEK]
 API_KEY = ""
-API_URL = ""
+STREAM_DELAY = 5  # Milliseconds between token emissions for reasoning models (higher = slower, 0 = no delay)
 
 [MODELS.OLLAMA]
 API_URL = "" # Ollama API URL - http://host.docker.internal:11434
+
+[MODELS.LMSTUDIO]
+API_URL = "" # LM STUDIO API URL - http://host.docker.internal:1234
+
+[MODELS.CUSTOM_OPENAI]
+API_KEY = ""
+API_URL = ""
+MODEL_NAME = ""
 
 [SEARCH_ENGINES.GOOGLE]
 API_KEY = ""
@@ -43,3 +51,4 @@ API_KEY = ""
 
 [SEARCH_ENGINES.YACY]
 ENDPOINT = ""
+

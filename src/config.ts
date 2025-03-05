@@ -29,7 +29,14 @@ interface Config {
     GEMINI: {
       API_KEY: string;
     };
+    DEEPSEEK: {
+      API_KEY: string;
+      STREAM_DELAY: number;
+    };
     OLLAMA: {
+      API_URL: string;
+    };
+    LMSTUDIO: { 
       API_URL: string;
     };
     CUSTOM_OPENAI: {
@@ -82,6 +89,11 @@ export const getAnthropicApiKey = () => loadConfig().MODELS.ANTHROPIC.API_KEY;
 
 export const getGeminiApiKey = () => loadConfig().MODELS.GEMINI.API_KEY;
 
+export const getDeepseekApiKey = () => loadConfig().MODELS.DEEPSEEK.API_KEY;
+
+export const getDeepseekStreamDelay = () => 
+  loadConfig().MODELS.DEEPSEEK.STREAM_DELAY || 5; // Default to 5ms if not specified
+
 export const getSearchEngineBackend = () =>
   loadConfig().SEARCH_ENGINE_BACKENDS.SEARCH;
 
@@ -110,6 +122,8 @@ export const getSearxngApiEndpoint = () =>
   process.env.SEARXNG_API_URL || loadConfig().SEARCH_ENGINES.SEARXNG.ENDPOINT;
 
 export const getOllamaApiEndpoint = () => loadConfig().MODELS.OLLAMA.API_URL;
+
+export const getLMStudioApiEndpoint = () => loadConfig().MODELS.LMSTUDIO.API_URL;
 
 export const getCustomOpenaiApiKey = () =>
   loadConfig().MODELS.CUSTOM_OPENAI.API_KEY;

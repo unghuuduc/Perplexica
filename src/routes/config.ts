@@ -9,6 +9,7 @@ import {
   getAnthropicApiKey,
   getGeminiApiKey,
   getOpenaiApiKey,
+  getDeepseekApiKey,
   updateConfig,
   getCustomOpenaiApiUrl,
   getCustomOpenaiApiKey,
@@ -67,6 +68,7 @@ router.get('/', async (_, res) => {
     config['anthropicApiKey'] = getAnthropicApiKey();
     config['groqApiKey'] = getGroqApiKey();
     config['geminiApiKey'] = getGeminiApiKey();
+    config['deepseekApiKey'] = getDeepseekApiKey();
     config['customOpenaiApiUrl'] = getCustomOpenaiApiUrl();
     config['customOpenaiApiKey'] = getCustomOpenaiApiKey();
     config['customOpenaiModelName'] = getCustomOpenaiModelName();
@@ -109,6 +111,9 @@ router.post('/', async (req, res) => {
       },
       GEMINI: {
         API_KEY: config.geminiApiKey,
+      },
+      DEEPSEEK: {
+        API_KEY: config.deepseekApiKey,
       },
       OLLAMA: {
         API_URL: config.ollamaApiUrl,
